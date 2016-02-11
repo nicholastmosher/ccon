@@ -58,9 +58,15 @@ commandList *create_command_list() {
 
 	commandList *list = calloc(1, sizeof(commandList));
 
+	//Verify the memory we were given.
+	check_mem(list);
+
 	list->size = 0;
 
 	return list;
+
+error:
+	return NULL;
 }
 
 /**
@@ -68,16 +74,14 @@ commandList *create_command_list() {
  */
 command *create_command(char *name) {
 
-	if(name == NULL) {
+	check(name != NULL, "create_command() failed: Name is null.");
 
-		log_warn("create_command() failed: Name is null.");
-
-		return NULL;
-	}
-
-	debug("Execute create_command(\"%s\").", name);
+	debug("Execute create_command(%s).", name);
 
 	command *node = calloc(1, sizeof(command));
+
+	//Verify the memory we were given.
+	check_mem(node);
 
 	node->name = strdup(name);
 
@@ -86,6 +90,9 @@ command *create_command(char *name) {
 	node->size = sizeof(int) + sizeof(node->id) + sizeof(node->next) + sizeof(name);
 
 	return node;
+
+error:
+	return NULL;
 }
 
 /**
@@ -129,21 +136,11 @@ void destroy_command_list(commandList *list) {
  */
 void add_command(commandList *list, command *node) {
 
-	if(list == NULL) {
+	check(list != NULL, "add_command() failed, list is null.");
 
-		log_warn("Add Command failed, list is null!");
+	check(node != NULL, "add_command() failed, node is null.");
 
-		return;
-	}
-
-	if(node == NULL) {
-
-		log_warn("Add Command failed, node is null!");
-
-		return;
-	}
-
-	debug("Execute add_command(\"%s\").", node->name);
+	debug("Execute add_command(%s).", node->name);
 
 	//If the size of the list is 0, this node will be both head and tail.
 	if(!list->size) {
@@ -177,7 +174,60 @@ void add_command(commandList *list, command *node) {
 
 	list->size++;
 
-	debug("Command id %d named \"%s\" added; List size is %d.", node->id, node->name, list->size);
+	debug("Command id %d named '%s' added; List size is %d.", node->id, node->name, list->size);
+
+error:
+	return;
+}
+
+/**
+ * Loops through the given list and reassigns all command id's in order.
+ */
+void relink_list(commandList *list) {
+
+	check(list != NULL, "List pointer is null.");
+
+	//Get a reference to the head of the list.
+	command *node = NULL;
+	int id = 0;
+
+	//Loop through all nodes and re-assign id's in order.
+	do {
+		if(node == NULL) {
+
+			node = list->head;
+
+			if(node == NULL) {
+
+				log_err("List head is null.");
+				list->size = 0;
+				return;
+			}
+
+		} else {
+
+			node = node->next;
+		}
+
+		//If the node's id is out of place, reassign it and log.
+		if(node->id != id) {
+
+			log_info("Command %s at incorrect id %d. Reassigning id %d.", node->name, node->id, id);
+
+		} else {
+
+			log_info("Command %s at correct id   %d.", node->name, node->id);
+		}
+
+		node->id = id++;
+
+	} while(node->next != NULL);
+
+	//At the end of the loop we know the difinitive length of the list.
+	list->size = id;
+
+error:
+	return;
 }
 
 /**
@@ -188,7 +238,7 @@ void add_command(commandList *list, command *node) {
  */
 command *remove_command(commandList *list, char *removeCommand) {
 
-	debug("Execute remove_command(\"%s\").", removeCommand);
+	debug("Execute remove_command(%s).", removeCommand);
 
 	//Null safety check the list pointer.
 	check(list != NULL, "Remove Command failed, list is null.");
@@ -211,7 +261,7 @@ command *remove_command(commandList *list, char *removeCommand) {
 		//If this command is indeed the one to remove, remove it.
 		if(!strcmp(node->name, removeCommand)) {
 
-			debug("Removing command id %d named \"%s\".", node->id, node->name);
+			debug("Removing command id %d named '%s'.", node->id, node->name);
 
 			list->head = NULL;
 
@@ -222,73 +272,17 @@ command *remove_command(commandList *list, char *removeCommand) {
 			return node;
 		}
 
-		debug("No command with id %d named \"%s\" in list.", node->id, node->name);
+		debug("No command with id %d named '%s' in list.", node->id, node->name);
+
+		return NULL;
 
 	//If the size of the list is not 0 or 1.
 	} else {
 
-		////Hold a pointer to the "current" node.
-		//command *node = list->head;
-
-		////While this command is not the command to remove and the next isn't NULL.
-		//while((strcmp(node->name, removeCommand)) && node->next != NULL) {
-
-		//	debug("Searching for node to remove: id %d named \"%s\".", node->id, node->name);
-
-		//	//Increment node.
-		//	node = node->next;
-		//}
-
-		//debug("Found node to remove: id %d named \"%s\".", node->id, node->name);
-
-		////If the next node is NULL, we hit the end of the list with no match.
-		//if(node->next == NULL) {
-
-		//	log_warn("Command to remove does not exist!");
-
-		//	return NULL;
-		//}
-
-		//debug("Node to remove is id %d in list.", node->id);
-
-		////Otherwise, the next node is the one to delete.
-		//command *removeNode = node->next;
-
-		////If there's no node after the one to remove, the node becomes tail.
-		//if(removeNode->next == NULL) {
-
-		//	list->tail = node;
-
-		////If there IS a node after, repair the list links.
-		//} else {
-
-		//	node->next = removeNode->next;
-
-		//	//Update the id's of all next commands.
-		//	int currentId = node->id;
-
-		//	while(node->next != NULL) {
-
-		//		//Increment current node and working id.
-		//		node = node->next;
-
-		//		//Set the node's id to one more than the last node's id.
-		//		node->id = ++currentId;
-		//	}
-		//}
-
-		////Since we've removed a node, the list is one element smaller.
-		//list->size--;
-
-		//debug("List size after removal is %d.", list->size);
-
-		//return removeNode;
-///////////////////////////////////////////////////////////////////////////////
 		//Hold a pointer to the "current" node.
-		debug("stuff and things.");
 		command *node = list->head;
 
-		debug("Sifting for node to remove: id %d named \"%s\".", node->id, node->name);
+		debug("Sifting for node to remove: id %d named '%s'.", node->id, node->name);
 
 		//Check if the first node is the one to remove.
 		if(!strcmp(node->name, removeCommand)) {
@@ -300,6 +294,8 @@ command *remove_command(commandList *list, char *removeCommand) {
 				list->head = node->next;
 			}
 
+			relink_list(list);
+
 			//Return the reference to the node that was removed.
 			return node;
 		}
@@ -307,7 +303,7 @@ command *remove_command(commandList *list, char *removeCommand) {
 		//While the next node isn't the one to remove, loop.
 		while(node->next != NULL && strcmp(node->next->name, removeCommand)) {
 
-			debug("Sifting for node to remove: id %d named \"%s\".", node->next->id, node->next->name);
+			debug("Sifting for node to remove: id %d named '%s'.", node->next->id, node->next->name);
 
 			//Increment node.
 			node = node->next;
@@ -315,9 +311,27 @@ command *remove_command(commandList *list, char *removeCommand) {
 
 		command *node_to_remove = node->next;
 
-		debug("Found command \"%s\" to remove at id %d.", node_to_remove->name, node_to_remove->id);
+		debug("Found command '%s' to remove at id %d.", node_to_remove->name, node_to_remove->id);
 
-		return node;
+		//Fix linked list by taking the removed node's next and attach it to node.
+		if(node_to_remove->next != NULL) {
+
+			debug("Relinking node id %d named '%s' to node id %d named '%s'.",
+					node_to_remove->next->id, node_to_remove->next->name, node->id, node->name);
+
+			node->next = node_to_remove->next;
+
+		} else {
+
+			//Set the last node as the tail.
+			list->tail = node;
+
+			node->next = NULL;
+		}
+
+		relink_list(list);
+
+		return node_to_remove;
 	}
 
 error:
@@ -336,23 +350,16 @@ void print_list(commandList *list) {
 
 	while(node->next != NULL) {
 
-		log_info("Command id %d named \"%s\".", node->id, node->name);
+		printf("Command id %d named '%s'.\n", node->id, node->name);
 
 		//Increment node.
 		node = node->next;
 	}
 
+	printf("Command id %d named '%s'.\n", node->id, node->name);
+
 error:
 	return;
-}
-
-void test_list();
-
-int main(int argc, char *argv[]) {
-
-	test_list();
-
-	return 0;
 }
 
 void test_list() {
@@ -377,9 +384,112 @@ void test_list() {
 
 	print_list(list);
 
-	remove_command(list, "Command Three");
+	destroy_command(remove_command(list, "Command Three"));
+
+	print_list(list);
+
+	destroy_command(remove_command(list, "Command Five"));
 
 	print_list(list);
 
 	destroy_command_list(list);
+}
+
+char *get_input() {
+
+	char *line = NULL;
+
+	size_t size;
+
+	ssize_t chars = getline(&line, &size, stdin);
+
+	check(line != NULL, "Line read from stdin is null.");
+
+	//Replace newline with string terminator.
+	if(line[chars-1] == '\n') {
+		line[chars-1] = '\0';
+	}
+
+	return line;
+
+error:
+	return NULL;
+}
+
+int main(int argc, char *argv[]) {
+
+	commandList *list = create_command_list();
+
+	char *input = NULL;
+
+	printf("ccon> ");
+
+	//Begin input parsing loop.
+	while((input = get_input()) != NULL) {
+
+		debug("Received input: %s", input);
+
+		input = strtok(input, " ");
+
+		check(input != NULL, "Command token is null.");
+
+		debug("Parsed command %s", input);
+
+		//If the user entered an "add" command.
+		if(!strcmp(input, "add") || !strcmp(input, "a")) {
+
+			char *name = strtok(NULL, " ");
+
+			check(name != NULL, "Command name argument is null.");
+
+			command *com = create_command(name);
+
+			check(com != NULL, "Command pointer null.");
+
+			add_command(list, com);
+
+		//If the user entered a "remove" command.
+		} else if(!strcmp(input, "remove") || !strcmp(input, "r")) {
+
+			char *name = strtok(NULL, " ");
+
+			check(name != NULL, "Command name argument is null.");
+
+			destroy_command(remove_command(list, name));
+
+		//If the user entered a "list" command.
+		} else if(!strcmp(input, "list") || !strcmp(input, "l")) {
+
+			print_list(list);
+
+		} else if(!strcmp(input, "relink")) {
+
+			relink_list(list);
+
+		} else if(!strcmp(input, "size")) {
+
+			printf("List size is %d.", list->size);
+
+		//If the user entered a "quit" command.
+		} else if(!strcmp(input, "quit") || !strcmp(input, "q") ||
+				!strcmp(input, "exit")) {
+
+			return 0;
+
+		} else {
+
+			printf("Command unrecognized.\n");
+		}
+
+		printf("ccon> ");
+	}
+
+	destroy_command_list(list);
+
+	printf("Quit\n");
+
+	return 0;
+
+error:
+	return 1;
 }
