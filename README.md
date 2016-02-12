@@ -1,0 +1,2 @@
+# ccon
+Compressed COmmand Notation
