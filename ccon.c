@@ -5,7 +5,7 @@
 
 #define DOLOG
 #define DEBUG
-#include "debug/dbg.h"
+#include "dbg.h"
 
 /**
  * Define structs to store argument data as
