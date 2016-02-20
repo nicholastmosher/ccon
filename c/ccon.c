@@ -153,6 +153,8 @@ void add_command(command_list *list, command *node) {
 	//If the size of the list is 0, this node will be both head and tail.
 	if(!list->size) {
 
+		debug("Adding command '%s' as the first element in the list.", node->name);
+
 		node->id = 0;
 
 		list->head = node;
@@ -162,20 +164,22 @@ void add_command(command_list *list, command *node) {
 	} else {
 
 		//Get the pointer of the head node.
-		command *currentNode = list->head;
+		command *current_node = list->head;
+
+		check(current_node != NULL, "List head is null. Failed to append.");
 
 		//Count how many nodes we traverse to get to the end.
 		int id = 1;
 
-		while(currentNode->next != NULL) {
+		while(current_node->next != NULL) {
 
-			currentNode = currentNode->next;
+			current_node = current_node->next;
 			id++;
 		}
 
 		node->id = id;
 
-		currentNode->next = node;
+		current_node->next = node;
 
 		list->tail = node;
 	}
@@ -269,7 +273,7 @@ command *remove_command(command_list *list, char *command_name) {
 		//If this node is the command to remove, remove it.
 		if(!strcmp(node->name, command_name)) {
 
-			//Check if this node is the list head.
+			//If this node is the list head.
 			if(node == list->head) {
 
 				debug("Command to remove: '%s' is the list head.", list->head->name);
@@ -284,6 +288,7 @@ command *remove_command(command_list *list, char *command_name) {
 
 					//If there are no more nodes in the list, set head to null.
 					list->head = NULL;
+					list->size = 0;
 				}
 
 				//Return the reference to the node that was removed.
@@ -334,6 +339,10 @@ command *remove_command(command_list *list, char *command_name) {
 error:
 	printf("Failed to remove command '%s'.", command_name);
 	return NULL;
+}
+
+void save_list(command_list *list, FILE *file) {
+
 }
 
 /**
@@ -472,14 +481,14 @@ int main(int argc, char *argv[]) {
 			char *name = strtok(NULL, " ");
 
 			if(name == NULL) {
-				log_info_or_printf("Command name argument is null.");
+				debug("Command name argument is null.");
 				continue;
 			}
 
 			command *to_remove = remove_command(list, name);
 
 			if(to_remove == NULL) {
-				log_info_or_printf("Command to remove: '%s' does not exist.", name);
+				debug("Command to remove: '%s' does not exist.", name);
 				continue;
 			}
 
@@ -511,6 +520,7 @@ int main(int argc, char *argv[]) {
 			printf("Command unrecognized.\n");
 		}
 
+		free(input);
 		printf("ccon> ");
 	}
 
